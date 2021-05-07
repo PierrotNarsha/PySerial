@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ #-*- coding: utf-8 -*-
 import serial
 import time
 import signal
@@ -16,43 +16,50 @@ import datetime
 # )
 
 global ser
-global pVal, hVal
+global temp
 global select_type
 
-recv_data = []  # 라인 단위로 데이터 가져올 리스트 변수
+recv_data = [] #라인 단위로 데이터 가져올 리스트 변수
 
-port = 'COM3'  # 시리얼 포트
-baud = 9600  # 시리얼 보드레이트(통신속도)
+port = 'COM6' # 시리얼 포트
+baud = 9600 # 시리얼 보드레이트(통신속도)
 
-exitThread = False  # 쓰레드 종료용 변수
+exitThread = False   # 쓰레드 종료용 변수
 
 
-# 쓰레드 종료용 시그널 함수
+#쓰레드 종료용 시그널 함수
 def handler(signum, frame):
-    exitThread = True
+     exitThread = True
 
-
-# 본 쓰레드
+#본 쓰레드
 def readThread():
     global recv_data
     global exitThread
     global ser
     global mysql_db
-    global pVal
-    global hVal
     global select_type
+    global temp
 
     # 쓰레드 종료될때까지 계속 돌림
     while not exitThread:
-        # 데이터가 있있다면
+        #데이터가 있있다면
 
         time.sleep(2)
 
-        ser.readline()
+        msg = ser.readline()
 
-        print(ser)
+        hex_rst = bytes.decode(msg)[15:23]
 
-        # for c in ser.readline():
+        nz_str = hex_rst.lstrip("0")
+
+        rst = int(nz_str, 16)
+
+        cha = rst - temp
+        temp = rst
+
+        print("cha : " + str(cha) + ",  temp : " + str(temp))
+
+        # for c in ser.read():
         #     recv_data.append(str(chr(c)))
         #
         #     if recv_data[-1] == '&': #라인의 끝을 만나면..
@@ -92,24 +99,48 @@ def readThread():
 
 
 if __name__ == "__main__":
-    # 종료 시그널 등록
+    #종료 시그널 등록
 
     global ser
-    global pVal
-    global hVal
+    global temp
     global select_type
 
-    select_type = input("type : ")
+    #select_type = input("type : ")
 
     dt = str(datetime.date.today())
 
-    signal.signal(signal.SIGINT, handler)
-
     data_list = []
+
+    # try:
+    #     mysql_cursor = mysql_db.cursor(buffered=True, dictionary=True)
+    #
+    #     sql = "SELECT input_date , product_code, sum(production_qty) FROM assembly_work_results where input_date='"+dt+"' group by input_date, product_code;"
+    #
+    #     mysql_cursor.execute(sql)
+    #
+    #     for ddd in mysql_cursor:
+    #         data_list.append(ddd)
+    #
+    #     mysql_db.commit()
+    #
+    #     if data_list == []:
+    #         pVal = 0
+    #         hVal = 0
+    #     else:
+    #         for data in data_list:
+    #             if data['product_code'] == 1:
+    #                 pVal = data['sum(production_qty)']
+    #             else:
+    #                 hVal = data['sum(production_qty)']
+    #
+    # except Exception as e:
+    #     print(e)
+
+    signal.signal(signal.SIGINT, handler)
 
     re_count = 0
 
-    # 시리얼 열기
+    #시리얼 열기
     while True:
         try:
             ser = serial.Serial(port=port, baudrate=baud, stopbits=1, timeout=0)
@@ -118,11 +149,14 @@ if __name__ == "__main__":
                 break
         except:
             re_count += 1
-            print('Reconnect serial port by' + port + 'for later 10 sec.\nReconnect count : ' + str(re_count))
+            print('Reconnect serial port by ' + port + ' for later 10 sec.\nReconnect count : ' + str(re_count))
             time.sleep(10)
 
-    # 시리얼 읽을 쓰레드 생성
+    temp = 0
+
+    #시리얼 읽을 쓰레드 생성
     thread = threading.Thread(target=readThread)
 
-    # 시작!
+    #시작!
     thread.start()
+
