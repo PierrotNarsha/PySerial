@@ -1,4 +1,5 @@
  #-*- coding: utf-8 -*-
+ #-*- coding: utf-8 -*-
 import serial
 import time
 import signal
@@ -6,14 +7,14 @@ import threading
 import mysql.connector
 import datetime
 
-# mysql_db = mysql.connector.connect(
-#     user='lautec',
-#     passwd='jointreeGood!@3',
-#     host='175.201.40.89',
-#     port=3306,
-#     db='lautec-erp',
-#     charset='utf8'
-# )
+mysql_db = mysql.connector.connect(
+    user='dev',
+    passwd='jointreeGood!@3',
+    host='59.28.51.182',
+    port=3306,
+    db='hyunjin-erp',
+    charset='utf8'
+)
 
 global ser
 global temp
@@ -21,7 +22,7 @@ global select_type
 
 recv_data = [] #라인 단위로 데이터 가져올 리스트 변수
 
-port = 'COM6' # 시리얼 포트
+port = 'COM1' # 시리얼 포트
 baud = 9600 # 시리얼 보드레이트(통신속도)
 
 exitThread = False   # 쓰레드 종료용 변수
@@ -76,26 +77,23 @@ def readThread():
         #             code = 1
         #         elif recv_data[0] == 'H':
         #             code = 2
+        #
+        # if select_type == '1':
+        try:
+            mysql_cursor = mysql_db.cursor(dictionary=True)
 
-    #     if select_type == '1':
-    #
-    #         print()
-    #
-    #         try:
-    #             mysql_cursor = mysql_db.cursor(dictionary=True)
-    #
-    #             sql = "INSERT INTO assembly_test (product_code, production_qty) VALUES (%s, %s)"
-    #             val = (select_type, 1)
-    #
-    #             mysql_cursor.execute(sql, val)
-    #
-    #             mysql_db.commit()
-    #
-    #             recv_data = []
-    #         except Exception as e:
-    #             print(e)
-    #
-    # mysql_db.close()
+            sql = "INSERT INTO assembly_test (product_code, production_qty) VALUES (%s, %s)"
+            val = (select_type, cha)
+
+            mysql_cursor.execute(sql, val)
+
+            mysql_db.commit()
+
+            recv_data = []
+        except Exception as e:
+            print(e)
+
+    mysql_db.close()
 
 
 if __name__ == "__main__":
@@ -159,4 +157,6 @@ if __name__ == "__main__":
 
     #시작!
     thread.start()
+
+
 
